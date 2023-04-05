@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "spatrem-parser"
+version = "0.1.0"
+description = ""
+authors = ["cwulfman <cwulfman@princeton.edu>"]
+readme = "README.md"
+packages = [{include = "spatrem_parser", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+shortuuid = "^1.0.11"
+rdflib = "^6.3.2"
+
+
+[tool.poetry.group.dev.dependencies]
+pyright = "^1.1.301"
+pytest = "^7.2.2"
+black = "^23.3.0"
+flake8 = "^6.0.0"
+isort = "^5.12.0"
+pytest-watch = "^4.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
