@@ -1,6 +1,6 @@
 from logging import debug
 import os
-from rdflib import graph, namespace
+from rdflib import Namespace, Graph
 from shortuuid import uuid
 from csv import DictReader, reader
 import rdflib
@@ -9,52 +9,20 @@ from rdflib.namespace._RDF import RDF
 from rdflib.term import URIRef, Literal
 
 
-def create_appellation(name: str):
+NOMEN = Namespace("http://spacesoftranslation.org/ns/nomena/")
+LRMoo = Namespace("http://iflastandards.info/ns/lrm/lrmer/")
+CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
+PERSON = Namespace("http://spacesoftranslation.org/ns/people/")
+
+
+def create_nomen(name: str):
     """Create an rdf.Graph for name."""
-    graph = rdflib.Graph()
-    id = rdflib.Namespace("http://spacesoftranslation.org/ns/appellations/")[uuid()]
-    graph.bind('ecrm', rdflib.Namespace("http://erlangen-crm.org/200717/"))
-    graph.bind(
-        "appellation",
-        rdflib.Namespace("http://spacesoftranslation.org/ns/appellations/"),
-    )
-
-    graph.add(
-        (
-            id,
-            RDF.type,
-            rdflib.Namespace("http://erlangen-crm.org/200717/")['E41_Appellation'],
-        )
-    )
+    graph = Graph()
+    id = NOMEN[uuid()]
+    graph.add((id, RDF.type, LRMoo.F12_Nomen))
     graph.add((id, RDFS.label, Literal(name)))
+    graph.add((id, LRMoo.R33_has_string, Literal(name)))
     return id, graph
-
-
-class AppellationDb:
-    """A class for maintaining a database of appellations.
-
-    Using this class avoids duplicate appellations.
-    """
-
-    namespaces = {
-        "ecrm": rdflib.Namespace("http://erlangen-crm.org/200717/"),
-        "appellation": rdflib.Namespace(
-            "http://spacesoftranslation.org/ns/appellations/"
-        ),
-    }
-
-    def __init__(self):
-        self.graph = rdflib.Graph()
-        for prefix, namespace in self.namespaces.items():
-            self.graph.bind(prefix, namespace)
-
-    def get_name(self, name: str):
-        try:
-            return next(self.graph.subjects(object=Literal(name)))
-        except:
-            id, appellation = create_appellation(name)
-            self.graph += appellation
-            return next(self.graph.subjects(object=Literal(name)))
 
 
 class Translators:
@@ -63,61 +31,32 @@ class Translators:
     Translators are represented as graphs; this class is a wrapper around a
     graph that contains such graphs."""
 
-    namespaces = {
-        "ecrm": rdflib.Namespace("http://erlangen-crm.org/200717/"),
-        "person": rdflib.Namespace("http://spacesoftranslation.org/ns/people/"),
-        "appellation": rdflib.Namespace(
-            "http://spacesoftranslation.org/ns/appellations/"
-        ),
-    }
-
     def __init__(self) -> None:
         self.graph = rdflib.Graph()
-        for prefix, namespace in self.namespaces.items():
-            self.graph.bind(prefix, namespace)
 
     def get_name(self, name: str):
         try:
             return next(self.graph.subjects(predicate=RDFS.label, object=Literal(name)))
         except:
-            id, appellation = create_appellation(name)
-            self.graph += appellation
+            id, nomen = create_nomen(name)
+            self.graph += nomen
             return next(self.graph.subjects(object=Literal(name)))
 
     def add_translator(self, translator):
         self.graph += translator.graph
-        id, appellation = create_appellation(translator.name)
-        self.graph += appellation
-        self.graph.add(
-            (
-                id,
-                rdflib.Namespace("http://erlangen-crm.org/200717/")['P1i_identifies'],
-                translator.id,
-            )
-        )
+        nomen_id, nomen = create_nomen(translator.name)
+        self.graph += nomen
+        self.graph.add((translator.id, LRMoo.R13_has_appellation, nomen_id))
         # Also add pseudonyms.
         if translator.pseudonyms:
             for pseudonym in translator.pseudonyms:
-                appellation = self.get_name(pseudonym)
-                self.graph.add(
-                    (
-                        appellation,
-                        rdflib.Namespace("http://erlangen-crm.org/200717/")[
-                            'P1i_identifies'
-                        ],
-                        translator.id,
-                    )
-                )
+                nomen = self.get_name(pseudonym)
+                self.graph.add((translator.id, LRMoo.R13_has_appellation, nomen))
 
 
 class Translator:
-    namespaces = {
-        "ecrm": rdflib.Namespace("http://erlangen-crm.org/200717/"),
-        "person": rdflib.Namespace("http://spacesoftranslation.org/ns/people/"),
-    }
-
     def __init__(self, **kwargs) -> None:
-        self.id = self.gen_id('person')
+        self.id = PERSON[uuid()]
         self.name = kwargs['Surname_Name'].strip()
         self.pseudonyms = None
         pseudonym_args = kwargs['Pseudonym(s)']
@@ -128,17 +67,9 @@ class Translator:
     def __repr__(self) -> str:
         return f"Translator({self.name})"
 
-    def namespace(self, prefix):
-        return self.namespaces[prefix]
-
-    def gen_id(self, ns):
-        return self.namespace(ns)[uuid()]
-
     def create_graph(self):
-        self.graph = rdflib.Graph()
-        for prefix, namespace in self.namespaces.items():
-            self.graph.bind(prefix, namespace)
-        self.graph.add((self.id, RDF.type, self.namespace('ecrm')['E21_Person']))
+        self.graph = Graph()
+        self.graph.add((self.id, RDF.type, CRM.E21_Person))
         self.graph.add((self.id, RDFS.label, rdflib.Literal(f"{self.name}")))
 
 
