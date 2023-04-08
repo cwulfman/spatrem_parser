@@ -1,6 +1,6 @@
 from logging import debug
 import os
-from rdflib import Namespace, Graph
+from rdflib import Namespace, Graph, namespace
 from shortuuid import uuid
 from csv import DictReader, reader
 import rdflib
@@ -15,9 +15,17 @@ CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 PERSON = Namespace("http://spacesoftranslation.org/ns/people/")
 
 
+def spatrem_graph():
+    namespaces = {"nomen": NOMEN, "lrm": LRMoo, "crm": CRM, "person": PERSON}
+    graph = Graph()
+    for prefix, namespace in namespaces.items():
+        graph.bind(prefix, namespace)
+    return graph
+
+
 def create_nomen(name: str):
     """Create an rdf.Graph for name."""
-    graph = Graph()
+    graph = spatrem_graph()
     id = NOMEN[uuid()]
     graph.add((id, RDF.type, LRMoo.F12_Nomen))
     graph.add((id, RDFS.label, Literal(name)))
@@ -32,7 +40,7 @@ class Translators:
     graph that contains such graphs."""
 
     def __init__(self) -> None:
-        self.graph = rdflib.Graph()
+        self.graph = spatrem_graph()
 
     def get_name(self, name: str):
         try:
@@ -68,7 +76,7 @@ class Translator:
         return f"Translator({self.name})"
 
     def create_graph(self):
-        self.graph = Graph()
+        self.graph = spatrem_graph()
         self.graph.add((self.id, RDF.type, CRM.E21_Person))
         self.graph.add((self.id, RDFS.label, rdflib.Literal(f"{self.name}")))
 
