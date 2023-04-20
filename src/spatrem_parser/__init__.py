@@ -15,18 +15,27 @@ CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 PERSON = Namespace("http://spacesoftranslation.org/ns/people/")
 
 
+def name_label(name: str):
+    new_name = name.replace(' ', '_')
+    new_name = new_name.replace(',', '')
+    new_name = new_name.replace('.', '')
+    return new_name
+
 def spatrem_graph():
     namespaces = {"nomen": NOMEN, "lrm": LRMoo, "crm": CRM, "person": PERSON}
     graph = Graph()
     for prefix, namespace in namespaces.items():
         graph.bind(prefix, namespace)
+        graph.bind("nomen", NOMEN)
+        graph.bind("person", PERSON)
     return graph
 
 
 def create_nomen(name: str):
     """Create an rdf.Graph for name."""
     graph = spatrem_graph()
-    id = NOMEN[uuid()]
+    # id = NOMEN[uuid()]
+    id = NOMEN[name_label(name)]
     graph.add((id, RDF.type, LRMoo.F12_Nomen))
     graph.add((id, RDFS.label, Literal(name)))
     graph.add((id, LRMoo.R33_has_string, Literal(name)))
@@ -64,8 +73,8 @@ class Translators:
 
 class Translator:
     def __init__(self, **kwargs) -> None:
-        self.id = PERSON[uuid()]
         self.name = kwargs['Surname_Name'].strip()
+        self.id = PERSON[name_label(self.name)]
         self.pseudonyms = None
         pseudonym_args = kwargs['Pseudonym(s)']
         if pseudonym_args != "NONE":
