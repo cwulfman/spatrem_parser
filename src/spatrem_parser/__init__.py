@@ -1,4 +1,6 @@
+from inspect import trace
 from logging import debug
+import spatrem_parser.datamodels as dm
 import os
 from rdflib import Namespace, Graph, namespace
 from shortuuid import uuid
@@ -42,6 +44,24 @@ def create_nomen(name: str):
     return id, graph
 
 
+class Translator:
+    def __init__(self, translator: dm.Translator) -> None:
+        self.name = translator.Surname_Name.strip()
+        self.id = PERSON[name_label(self.name)]
+        self.pseudonyms = None
+        pseudonym_args: str | None = translator.Pseudonyms
+        if pseudonym_args and pseudonym_args != "NONE":
+            self.pseudonyms = [s.strip() for s in pseudonym_args.split(';')]
+        self.create_graph()
+
+    def __repr__(self) -> str:
+        return f"Translator({self.name})"
+
+    def create_graph(self):
+        self.graph = spatrem_graph()
+        self.graph.add((self.id, RDF.type, CRM.E21_Person))
+        self.graph.add((self.id, RDFS.label, rdflib.Literal(f"{self.name}")))
+
 class Translators:
     """A class for managing translator records/graphs.
 
@@ -54,12 +74,12 @@ class Translators:
     def get_name(self, name: str):
         try:
             return next(self.graph.subjects(predicate=RDFS.label, object=Literal(name)))
-        except:
-            id, nomen = create_nomen(name)
+        except Exception:
+            _, nomen = create_nomen(name)
             self.graph += nomen
             return next(self.graph.subjects(object=Literal(name)))
 
-    def add_translator(self, translator):
+    def add_translator(self, translator: Translator):
         self.graph += translator.graph
         nomen_id, nomen = create_nomen(translator.name)
         self.graph += nomen
@@ -71,32 +91,17 @@ class Translators:
                 self.graph.add((translator.id, LRMoo.R13_has_appellation, nomen))
 
 
-class Translator:
-    def __init__(self, **kwargs) -> None:
-        self.name = kwargs['Surname_Name'].strip()
-        self.id = PERSON[name_label(self.name)]
-        self.pseudonyms = None
-        pseudonym_args = kwargs['Pseudonym(s)']
-        if pseudonym_args != "NONE":
-            self.pseudonyms = [s.strip() for s in pseudonym_args.split(';')]
-        self.create_graph()
-
-    def __repr__(self) -> str:
-        return f"Translator({self.name})"
-
-    def create_graph(self):
-        self.graph = spatrem_graph()
-        self.graph.add((self.id, RDF.type, CRM.E21_Person))
-        self.graph.add((self.id, RDFS.label, rdflib.Literal(f"{self.name}")))
+class Translation:
+    pass
 
 
 with open('../../data/KA_Translators.csv', mode='r', encoding='utf-8-sig') as csvfile:
-    reader = DictReader(csvfile, delimiter=';')
-    translator_list = list()
-    db = Translators()
+    reader: DictReader = DictReader(csvfile, delimiter=';')
+    translators: list = []
+    db: Translators = Translators()
     for row in reader:
-        translator = Translator(**row)
-        translator_list.append(translator)
+        translator = Translator(dm.Translator(**row))
+        translators.append(translator)
         db.add_translator(translator)
 
 with open('/tmp/translators.ttl', mode='w', encoding='utf-8') as f:
