@@ -1,5 +1,6 @@
 from inspect import trace
 from logging import debug
+from typing import List
 import spatrem_parser.datamodels as dm
 import os
 from rdflib import Namespace, Graph, namespace
@@ -22,6 +23,7 @@ def name_label(name: str):
     new_name = new_name.replace(',', '')
     new_name = new_name.replace('.', '')
     return new_name
+
 
 def spatrem_graph():
     namespaces = {"nomen": NOMEN, "lrm": LRMoo, "crm": CRM, "person": PERSON}
@@ -62,6 +64,7 @@ class Translator:
         self.graph.add((self.id, RDF.type, CRM.E21_Person))
         self.graph.add((self.id, RDFS.label, rdflib.Literal(f"{self.name}")))
 
+
 class Translators:
     """A class for managing translator records/graphs.
 
@@ -92,17 +95,27 @@ class Translators:
 
 
 class Translation:
-    pass
+    def __init__(self, data: dm.Translation) -> None:
+        self.data: dm.Translation = data
+
+    def __repr__(self) -> str:
+        return f"Translation({self.data.Title})"
 
 
-with open('../../data/KA_Translators.csv', mode='r', encoding='utf-8-sig') as csvfile:
+with open('../data/KA_Translations.csv', mode='r', encoding='utf-8-sig') as csvfile:
     reader: DictReader = DictReader(csvfile, delimiter=';')
-    translators: list = []
-    db: Translators = Translators()
+    translations: List[Translation] = []
     for row in reader:
-        translator = Translator(dm.Translator(**row))
-        translators.append(translator)
-        db.add_translator(translator)
+        translations.append(Translation(dm.Translation(**row)))
 
-with open('/tmp/translators.ttl', mode='w', encoding='utf-8') as f:
-    f.write(db.graph.serialize())
+# with open('../../data/KA_Translators.csv', mode='r', encoding='utf-8-sig') as csvfile:
+#     reader: DictReader = DictReader(csvfile, delimiter=';')
+#     translators: list = []
+#     db: Translators = Translators()
+#     for row in reader:
+#         translator = Translator(dm.Translator(**row))
+#         translators.append(translator)
+#         db.add_translator(translator)
+
+# with open('/tmp/translators.ttl', mode='w', encoding='utf-8') as f:
+#     f.write(db.graph.serialize())
