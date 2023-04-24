@@ -16,6 +16,8 @@ NOMEN = Namespace("http://spacesoftranslation.org/ns/nomena/")
 LRMoo = Namespace("http://iflastandards.info/ns/lrm/lrmer/")
 CRM = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 PERSON = Namespace("http://spacesoftranslation.org/ns/people/")
+JOURNAL = Namespace("http://spacesoftranslation.org/ns/journals/")
+ISSUE = Namespace("http://spacesoftranslation.org/ns/issues/")
 
 
 def name_label(name: str):
@@ -26,7 +28,14 @@ def name_label(name: str):
 
 
 def spatrem_graph():
-    namespaces = {"nomen": NOMEN, "lrm": LRMoo, "crm": CRM, "person": PERSON}
+    namespaces = {
+        "nomen": NOMEN,
+        "lrm": LRMoo,
+        "crm": CRM,
+        "person": PERSON,
+        "journal": JOURNAL,
+        "issue": ISSUE,
+    }
     graph = Graph()
     for prefix, namespace in namespaces.items():
         graph.bind(prefix, namespace)
@@ -94,12 +103,32 @@ class Translators:
                 self.graph.add((translator.id, LRMoo.R13_has_appellation, nomen))
 
 
+class Journal:
+    def __init__(self, name: str) -> None:
+        self.id = JOURNAL[name]
+        self.graph: rdflib.graph.Graph = spatrem_graph()
+        self.graph.add((self.id, RDF.type, LRMoo.F18_Serial_Work))
+
+
+class Issue:
+    def __init__(
+        self, journal: str, year: str, issue_id: str, vol: str, no: str
+    ) -> None:
+        self.id: rdflib.term.URIRef = ISSUE[f"{journal}_{issue_id}"]
+        self.graph: rdflib.graph.Graph = spatrem_graph()
+        self.graph.add((self.id, RDF.type, LRMoo.F1_Work))
+        self.graph.add((JOURNAL[journal], LRMoo.R67_has_part, self.id))
+
+
 class Translation:
     def __init__(self, data: dm.Translation) -> None:
         self.data: dm.Translation = data
 
     def __repr__(self) -> str:
         return f"Translation({self.data.Title})"
+
+    def create_graph(self) -> None:
+        self.graph = spatrem_graph()
 
 
 with open('../data/KA_Translations.csv', mode='r', encoding='utf-8-sig') as csvfile:
