@@ -7,7 +7,17 @@ from rdflib.namespace._RDFS import RDFS
 from rdflib.namespace._RDF import RDF
 from rdflib.term import URIRef, Literal
 
-
+spatrem_namespaces = {
+    "nomen": Namespace("http://spacesoftranslation.org/ns/nomena/"),
+    "lrm": Namespace("http://iflastandards.info/ns/lrm/lrmer/"),
+    "crm": Namespace("http://www.cidoc-crm.org/cidoc-crm/"),
+    "person": Namespace("http://spacesoftranslation.org/ns/people/"),
+    "journal": Namespace("http://spacesoftranslation.org/ns/journals/"),
+    "issue": Namespace("http://spacesoftranslation.org/ns/issues/"),
+    "work": Namespace("http://spacesoftranslation.org/ns/works/"),
+    "translation": Namespace("http://spacesoftranslation.org/ns/translations/"),
+    "spatrem": Namespace("http://spacesoftranslation.org/ns/spatrem/"),
+}
 
 NOMEN = Namespace("http://spacesoftranslation.org/ns/nomena/")
 LRMoo = Namespace("http://iflastandards.info/ns/lrm/lrmer/")
@@ -45,17 +55,6 @@ def spatrem_graph():
     return graph
 
 
-def create_nomen(name: str):
-    """Create an rdf.Graph for name."""
-    graph = spatrem_graph()
-    # id = NOMEN[uuid()]
-    id = NOMEN[clean_name(name)]
-    graph.add((id, RDF.type, LRMoo.F12_Nomen))
-    graph.add((id, RDFS.label, Literal(name)))
-    graph.add((id, LRMoo.R33_has_string, Literal(name)))
-    return id, graph
-
-
 # class Translator:
 #     def __init__(self, translator: dm.Translator) -> None:
 #         self.name = clean_name(translator.Surname_Name)
@@ -74,20 +73,23 @@ def create_nomen(name: str):
 #         self.graph.add((self.id, RDF.type, CRM.E21_Person))
 #         self.graph.add((self.id, RDFS.label, rdflib.Literal(f"{self.name}")))
 
+
 class Nomen:
-    def __init__(self, name:str)->None:
+    def __init__(self, name: str) -> None:
         self.graph = spatrem_graph()
         self.id = NOMEN[clean_name(name)]
         self.graph.add((self.id, RDF.type, LRMoo.F12_Nomen))
         self.graph.add((self.id, RDFS.label, Literal(name)))
         self.graph.add((self.id, LRMoo.R33_has_string, Literal(name)))
 
+
 class Person:
-    def __init__(self, name:str) -> None:
+    def __init__(self, name: str) -> None:
         self.graph = spatrem_graph()
         self.id = PERSON[clean_name(name)]
         self.graph.add((self.id, RDF.type, CRM.E21_Person))
         self.graph.add((self.id, RDFS.label, Literal(name)))
+
 
 class Translator:
     def __init__(self, data: dm.Translation) -> None:
@@ -98,37 +100,11 @@ class Translator:
                 self.graph += Nomen(name).graph
                 self.graph += Person(name).graph
         if data.Listed_Translator and data.Listed_Translator != "NONE":
-            names: List[str] = [clean_name(name) for name in data.Listed_Translator.split(";")]
+            names: List[str] = [
+                clean_name(name) for name in data.Listed_Translator.split(";")
+            ]
             for name in names:
                 self.graph += Nomen(name).graph
-
-# class Translators:
-#     """A class for managing translator records/graphs.
-
-#     Translators are represented as graphs; this class is a wrapper around a
-#     graph that contains such graphs."""
-
-#     def __init__(self) -> None:
-#         self.graph = spatrem_graph()
-
-#     def get_name(self, name: str):
-#         try:
-#             return next(self.graph.subjects(predicate=RDFS.label, object=Literal(name)))
-#         except Exception:
-#             _, nomen = create_nomen(name)
-#             self.graph += nomen
-#             return next(self.graph.subjects(object=Literal(name)))
-
-#     def add_translator(self, translator: Translator):
-#         self.graph += translator.graph
-#         nomen_id, nomen = create_nomen(translator.name)
-#         self.graph += nomen
-#         self.graph.add((translator.id, LRMoo.R13_has_appellation, nomen_id))
-#         # Also add pseudonyms.
-#         if translator.pseudonyms:
-#             for pseudonym in translator.pseudonyms:
-#                 nomen = self.get_name(pseudonym)
-#                 self.graph.add((translator.id, LRMoo.R13_has_appellation, nomen))
 
 
 class Journal:
@@ -136,6 +112,11 @@ class Journal:
         self.id = JOURNAL[name]
         self.graph: Graph = spatrem_graph()
         self.graph.add((self.id, RDF.type, LRMoo.F18_Serial_Work))
+
+        expr_id = SPATREM[f"{name}_expr"]
+        self.graph.add((expr_id, RDF.type, LRMoo.F2_Expression))
+        self.graph.add((expr_id, LRMoo.R3_realises, self.id))
+        self.graph.add((self.id, LRMoo.R3i_is_realised_by, expr_id))
 
 
 class Issue:
@@ -171,7 +152,6 @@ class Translation:
 
         self.graph += Translator(self.data).graph
 
-
         self.graph.add((self.id, RDF.type, LRMoo.F1_Work))
         self.graph.add(
             (self.id, RDFS.label, rdflib.Literal(clean_name(self.data.Title)))
@@ -179,20 +159,21 @@ class Translation:
         self.graph.add((issue.id, LRMoo.R67_has_part, self.id))
         self.graph.add((self.id, LRMoo.R67i_is_part_of, issue.id))
 
-
         # add the expression statements
 
         expr_id: URIRef = SPATREM[f"{clean_name(self.data.Title)}_expr"]
         self.graph.add((expr_id, RDF.type, LRMoo.F2_Expression))
         self.graph.add((expr_id, LRMoo.R3_realises, self.id))
         self.graph.add((self.id, LRMoo.R3i_is_realised_by, expr_id))
+        self.graph.add((expr_id, LRMoo.R23i_is_part_of, journal.id))
+        self.graph.add((journal.id, LRMoo.R23_has_part, expr_id))
 
 
-with open('../data/KA_Translations.csv', mode='r', encoding='utf-8-sig') as csvfile:
-    reader: DictReader = DictReader(csvfile, delimiter=';')
-    translations: List[Translation] = []
-    for row in reader:
-        translations.append(Translation(dm.Translation(**row)))
+# with open('../data/KA_Translations.csv', mode='r', encoding='utf-8-sig') as csvfile:
+#     reader: DictReader = DictReader(csvfile, delimiter=';')
+#     translations: List[Translation] = []
+#     for row in reader:
+#         translations.append(Translation(dm.Translation(**row)))
 
 # with open('../../data/KA_Translators.csv', mode='r', encoding='utf-8-sig') as csvfile:
 #     reader: DictReader = DictReader(csvfile, delimiter=';')
@@ -206,14 +187,10 @@ with open('../data/KA_Translations.csv', mode='r', encoding='utf-8-sig') as csvf
 # with open('/tmp/translators.ttl', mode='w', encoding='utf-8') as f:
 #     f.write(db.graph.serialize())
 
-g = spatrem_graph()
-for dm_translation in translations:
-    translation = Translation(dm_translation.data)
-    g += translation.graph
-    # journal = Journal(translation.data.Journal)
-    # issue = Issue(data)
-    # g += journal.graph
-    # g += issue.graph
+# g = spatrem_graph()
+# for dm_translation in translations:
+#     translation = Translation(dm_translation.data)
+#     g += translation.graph
 
-with open('/tmp/translations.ttl', mode='w', encoding='utf-8') as f:
-    f.write(g.serialize())
+# with open('/tmp/translations.ttl', mode='w', encoding='utf-8') as f:
+#     f.write(g.serialize())

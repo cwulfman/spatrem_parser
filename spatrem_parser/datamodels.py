@@ -1,4 +1,3 @@
-from csv import DictReader
 from typing import Optional
 from pydantic import BaseModel
 
