@@ -53,6 +53,7 @@ class BaseGraph:
             self.label = label.strip()
 
         self.id = self.spatrem[self.clean_id(self.label)]
+        self.graph.add((self.id, RDFS.label, Literal(self.label)))
 
     def clean_id(self, id_string: str) -> str:
         id = id_string.strip()
@@ -81,14 +82,12 @@ class BaseGraph:
 class LrmGraph(BaseGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
-        self.id = self.lrm[self.clean_id(self.label)]
         self.graph.add((self.id, RDFS.label, Literal(self.label)))
 
 
 class CrmGraph(BaseGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
-        self.id = self.crm[self.label]
         self.graph.add((self.id, RDFS.label, Literal(self.label)))
 
 
@@ -132,3 +131,4 @@ class Nomen(LrmGraph):
 class Person(CrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
+        self.graph.add((self.id, RDF.type, self.crm.E21_Person))
