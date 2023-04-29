@@ -45,13 +45,23 @@ class BaseGraph:
         self.graph.bind("crm", "http://www.cidoc-crm.org/cidoc-crm/")
         self.graph.bind("spatrem", "http://spacesoftranslation.org/ns/spatrem/")
 
-        self._id: Optional[URIRef] = None
+        self._id: URIRef
 
         if label is None:
             self.label = uuid()
-            self.id = self.spatrem[self.label]
         else:
-            self.label = label
+            self.label = label.strip()
+
+        self.id = self.spatrem[self.clean_id(self.label)]
+
+    def clean_id(self, id_string: str) -> str:
+        id = id_string.strip()
+        id = id.replace(' ', '_')
+        id = id.replace(',', '')
+        id = id.replace(':', '')
+        id = id.replace(';', '')
+        id = id.replace('.', '')
+        return id
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {self.label}>"
@@ -60,7 +70,7 @@ class BaseGraph:
         return self.graph.serialize()
 
     @property
-    def id(self) -> URIRef | None:
+    def id(self) -> URIRef:
         return self._id
 
     @id.setter
@@ -71,7 +81,14 @@ class BaseGraph:
 class LrmGraph(BaseGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
-        self.id = self.lrm[self.label]
+        self.id = self.lrm[self.clean_id(self.label)]
+        self.graph.add((self.id, RDFS.label, Literal(self.label)))
+
+
+class CrmGraph(BaseGraph):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__(label)
+        self.id = self.crm[self.label]
         self.graph.add((self.id, RDFS.label, Literal(self.label)))
 
 
@@ -110,3 +127,8 @@ class Nomen(LrmGraph):
 
         self.graph.add((self.id, RDF.type, self.lrm.F12_Nomen))
         self.graph.add((self.id, self.lrm.R33_has_string, Literal(name)))
+
+
+class Person(CrmGraph):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__(label)
