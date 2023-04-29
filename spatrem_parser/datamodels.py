@@ -34,22 +34,24 @@ class Translation(BaseModel):
     Notes: str
 
 
-class Frbroo:
+class BaseGraph:
     lrm: Namespace = Namespace("http://iflastandards.info/ns/lrm/lrmer/")
     crm: Namespace = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
+    spatrem: Namespace = Namespace("http://spacesoftranslation.org/ns/spatrem/")
 
     def __init__(self, label: Optional[str] = None) -> None:
         self.graph = Graph()
         self.graph.bind("lrm", "http://iflastandards.info/ns/lrm/lrmer/")
         self.graph.bind("crm", "http://www.cidoc-crm.org/cidoc-crm/")
+        self.graph.bind("spatrem", "http://spacesoftranslation.org/ns/spatrem/")
+
+        self._id: Optional[URIRef] = None
 
         if label is None:
             self.label = uuid()
+            self.id = self.spatrem[self.label]
         else:
             self.label = label
-        self.id = self.lrm[self.label]
-
-        self.graph.add((self.id, RDFS.label, Literal(self.label)))
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {self.label}>"
@@ -57,8 +59,23 @@ class Frbroo:
     def __str__(self) -> str:
         return self.graph.serialize()
 
+    @property
+    def id(self) -> URIRef | None:
+        return self._id
 
-class Work(Frbroo):
+    @id.setter
+    def id(self, iri: URIRef) -> None:
+        self._id = iri
+
+
+class LrmGraph(BaseGraph):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__(label)
+        self.id = self.lrm[self.label]
+        self.graph.add((self.id, RDFS.label, Literal(self.label)))
+
+
+class Work(LrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
         self.graph.add((self.id, RDF.type, self.lrm.F1_Work))
@@ -74,7 +91,7 @@ class SerialWork(Work):
         self.graph.add((self.id, RDF.type, self.lrm.F18_Serial_Work))
 
 
-class Expression(Frbroo):
+class Expression(LrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
         self.graph.add((self.id, RDF.type, self.lrm.F2_Expression))
@@ -84,7 +101,7 @@ class Expression(Frbroo):
         self.graph.add((self.id, self.lrm.R3_realises, work.id))
 
 
-class Nomen(Frbroo):
+class Nomen(LrmGraph):
     def __init__(self, name: str, label: Optional[str] = None) -> None:
         if label:
             super().__init__(label)
