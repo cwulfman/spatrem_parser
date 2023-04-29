@@ -1,5 +1,10 @@
 from typing import Optional
 from pydantic import BaseModel
+from rdflib import Graph, Namespace
+from rdflib.namespace._RDF import RDF
+from rdflib.namespace._RDFS import RDFS
+from rdflib.term import URIRef, Literal
+from shortuuid import uuid
 
 
 class Translator(BaseModel):
@@ -29,16 +34,62 @@ class Translation(BaseModel):
     Notes: str
 
 
-# with open('../../data/KA_Translators.csv', mode='r', encoding='utf-8-sig') as csvfile:
-#     reader: DictReader = DictReader(csvfile, delimiter=';')
-#     translators: list = []
-#     for row in reader:
-#         translator = Translator(**row)
-#         translators.append(translator)
+class Frbroo:
+    lrm: Namespace = Namespace("http://iflastandards.info/ns/lrm/lrmer/")
+    crm: Namespace = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
 
-# with open('../../data/KA_Translations.csv', mode='r', encoding='utf-8-sig') as csvfile:
-#     reader: DictReader = DictReader(csvfile, delimiter=';')
-#     translations: list = []
-#     for row in reader:
-#         translation = Translation(**row)
-#         translations.append(translation)
+    def __init__(self, label: Optional[str] = None) -> None:
+        self.graph = Graph()
+        self.graph.bind("lrm", "http://iflastandards.info/ns/lrm/lrmer/")
+        self.graph.bind("crm", "http://www.cidoc-crm.org/cidoc-crm/")
+
+        if label is None:
+            self.label = uuid()
+        else:
+            self.label = label
+        self.id = self.lrm[self.label]
+
+        self.graph.add((self.id, RDFS.label, Literal(self.label)))
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__}: {self.label}>"
+
+    def __str__(self) -> str:
+        return self.graph.serialize()
+
+
+class Work(Frbroo):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__(label)
+        self.graph.add((self.id, RDF.type, self.lrm.F1_Work))
+
+    def is_realised_by(self, expr: "Expression") -> None:
+        self.graph.add((self.id, self.lrm.R3i_is_realised_by, expr.id))
+
+
+class SerialWork(Work):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__(label)
+        self.graph.remove((self.id, RDF.type, self.lrm.F1_Work))
+        self.graph.add((self.id, RDF.type, self.lrm.F18_Serial_Work))
+
+
+class Expression(Frbroo):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__(label)
+        self.graph.add((self.id, RDF.type, self.lrm.F2_Expression))
+        self.graph.add((self.id, RDFS.label, Literal(label)))
+
+    def realises(self, work: Work) -> None:
+        self.graph.add((self.id, self.lrm.R3_realises, work.id))
+
+
+class Nomen(Frbroo):
+    def __init__(self, name: str, label: Optional[str] = None) -> None:
+        if label:
+            super().__init__(label)
+        else:
+            super().__init__(name)
+
+        self.graph.add((self.id, RDF.type, self.lrm.F12_Nomen))
+        self.graph.add((self.id, self.lrm.R33_has_string, Literal(name)))
