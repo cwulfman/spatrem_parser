@@ -99,6 +99,12 @@ class Work(LrmGraph):
     def is_realised_by(self, expr: "Expression") -> None:
         self.graph.add((self.id, self.lrm.R3i_is_realised_by, expr.id))
 
+    def has_part(self, work: "Work") -> None:
+        self.graph.add((self.id, self.lrm.R67_has_part, work.id))
+
+    def is_part_of(self, work: "Work") -> None:
+        self.graph.add((self.id, self.lrm.R67i_is_part_of, work.id))
+
 
 class SerialWork(Work):
     def __init__(self, label: Optional[str] = None) -> None:
