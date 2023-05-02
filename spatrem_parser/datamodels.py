@@ -1,3 +1,4 @@
+from os import times_result
 from typing import Optional
 from pydantic import BaseModel
 from rdflib import Graph, Namespace
@@ -95,9 +96,10 @@ class Work(LrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
         self.graph.add((self.id, RDF.type, self.lrm.F1_Work))
-        self.expression: "Expression"
+        self.expression: Optional["Expression"] = None
 
     def is_realised_by(self, expr: "Expression") -> None:
+        self.expression = expr
         self.graph.add((self.id, self.lrm.R3i_is_realised_by, expr.id))
 
     def has_part(self, work: "Work") -> None:
@@ -171,6 +173,9 @@ class Expression(LrmGraph):
     def has_language(self, language: "Language") -> None:
         self.graph.add((self.id, self.crm.P72i_has_language, language.id))
 
+    def is_embodied_in(self, manifestation: "Manifestion") -> None:
+        self.graph.add((self.id, self.lrm.R4i_is_embodied_in, manifestation.id))
+
 
 class Person(CrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
@@ -214,3 +219,49 @@ class Language(CrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
         self.graph.add((self.id, RDF.type, self.crm.E56_Language))
+
+
+class Manifestion(LrmGraph):
+    def __init__(
+        self, label: Optional[str] = None, time_span: Optional["TimeSpan"] = None
+    ) -> None:
+        super().__init__(label)
+        self.graph.add((self.id, RDF.type, self.lrm.F3_Manifestation))
+        if time_span:
+            m_creation: "ManifestationCreation" = ManifestationCreation(time_span)
+            self.was_created_by(m_creation)
+
+    def was_created_by(self, mc: "ManifestationCreation") -> None:
+        self.graph.add((self.id, self.lrm.R24i_was_created_by, mc.id))
+
+    def embodies(self, expr: Expression) -> None:
+        self.graph.add((self.id, self.lrm.R4_embodies, expr.id))
+
+
+class ManifestationCreation(LrmGraph):
+    def __init__(self, time_span: Optional["TimeSpan"] = None) -> None:
+        label = "manifest_creation"
+        if time_span:
+            label = f"{label}_{time_span.label}"
+        super().__init__(label)
+        self.graph.add((self.id, RDF.type, self.lrm.F30_Manifestation_Creation))
+        if time_span:
+            self.has_time_span(time_span)
+
+    def embodies(self, expr: Expression) -> None:
+        self.graph.add((self.id, self.lrm.R4_embodies, expr.id))
+
+    def created(self, manifestation: Manifestion) -> None:
+        self.graph.add((self.id, self.lrm.R24_created, manifestation.id))
+
+    def has_time_span(self, time_span: "TimeSpan") -> None:
+        self.graph.add((self.id, self.crm.P4_has_time_span, time_span.id))
+
+
+class TimeSpan(LrmGraph):
+    def __init__(self, time_span_str: str) -> None:
+        super().__init__(time_span_str)
+        self.graph.add((self.id, RDF.type, self.lrm.E52_Time_Span))
+        self.graph.add(
+            (self.id, self.lrm.P82_at_some_time_within, Literal(time_span_str))
+        )

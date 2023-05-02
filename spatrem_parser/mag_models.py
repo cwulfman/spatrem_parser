@@ -57,21 +57,32 @@ class Issue(dm.Work):
 
 
 class Constituent(dm.Work):
-    def __init__(self, issue: Issue, constituent_label: str) -> None:
-        self.label: str = f"{issue.label}_{constituent_label}"
+    def __init__(self, issue: Issue, item: dm.Work) -> None:
+        self.label: str = f"{issue.label}_{item.label}"
         super().__init__(self.label)
         self.is_part_of(issue)
         issue.has_part(self)
 
+        self.is_derivative_of(item)
+        item.has_derivative(self)
+
         self.expression: dm.Expression = dm.Expression(f"{self.label}_expr")
         self.is_realised_by(self.expression)
         self.expression.realises(self)
+
+        if item.expression:
+            self.expression.incorporates(item.expression)
+            item.expression.is_incorporated_in(self.expression)
+
         issue.editor_expr.incorporates(self.expression)
         self.expression.is_incorporated_in(issue.editor_expr)
 
         self.graph += issue.graph
         self.graph += issue.editor_expr.graph
         self.graph += self.expression.graph
+        self.graph += item.graph
+        if item.expression:
+            self.graph += item.expression.graph
 
 
 class PublicationWork(dm.Work):

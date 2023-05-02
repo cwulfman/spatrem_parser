@@ -55,12 +55,22 @@ def create_translation(data: dm.Translation) -> Graph:
     translator: Author = Author(data.Translator)
     SL = dm.Language(data.SL)
     TL = dm.Language(data.TL)
+    date = dm.TimeSpan(data.Year)
 
     original_work: dm.Work = create_authored_work(f"{data.Title}_original", author, SL)
     translation: dm.Work = create_authored_work(
         f"{data.Title}_translation", translator, TL
     )
     translation.is_derivative_of(original_work)
+
+    constituent: Constituent = Constituent(issue, translation)
+
+    manifestation: dm.Manifestion = dm.Manifestion(
+        label=f"{journal.label}_{issue.label}_manifestation", time_span=date
+    )
+    if issue.expression:
+        manifestation.embodies(issue.expression)
+        issue.expression.is_embodied_in(manifestation)
 
     for entity in [
         journal,
@@ -69,10 +79,16 @@ def create_translation(data: dm.Translation) -> Graph:
         translator,
         SL,
         TL,
+        date,
         original_work,
         translation,
+        constituent,
+        manifestation,
     ]:
         g += entity.graph
+
+    if issue.expression:
+        g += issue.expression.graph
 
     return g
 
@@ -93,12 +109,3 @@ class TranslationOld(dm.BaseGraph):
         self.graph += journal.graph
         self.graph += issue.graph
         self.graph += constituent.graph
-
-
-t_file = Path("../data/KA_Translations.csv")
-
-with open(t_file, mode='r', encoding='utf-8-sig') as csvfile:
-    reader: DictReader = DictReader(csvfile, delimiter=';')
-    translations: List[Graph] = []
-    for row in reader:
-        translations.append(create_translation(dm.Translation(**row)))
