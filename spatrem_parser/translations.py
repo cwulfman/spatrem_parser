@@ -30,7 +30,7 @@ def create_authored_work(
     expr.realises(work)
     work.is_realised_by(expr)
     if author:
-        expr_creation: dm.ExpressionCreation = dm.ExpressionCreation()
+        expr_creation: dm.ExpressionCreation = dm.ExpressionCreation(f"creation of {title}")
         author.performed(expr_creation)
         work.was_realised_through(expr_creation)
         expr.was_created_by(expr_creation)
@@ -91,21 +91,3 @@ def create_translation(data: dm.Translation) -> Graph:
         g += issue.expression.graph
 
     return g
-
-
-class TranslationOld(dm.BaseGraph):
-    def __init__(self, data: dm.Translation) -> None:
-        super().__init__(data.Title)
-        self.data: dm.Translation = data
-        self.create_graph()
-
-    def create_graph(self):
-        name: str = self.data.Journal
-        journal: Journal = Journal(self.data.Journal)
-        issue: Issue = Issue(journal, self.data.Issue_ID)
-
-        constituent: Constituent = Constituent(issue, self.data.Title)
-
-        self.graph += journal.graph
-        self.graph += issue.graph
-        self.graph += constituent.graph

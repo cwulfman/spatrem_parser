@@ -1,13 +1,8 @@
 from logging import _nameToLevel
 from typing import Optional
-
+from rdflib import Graph
 from pydantic import config, conset
 import spatrem_parser.datamodels as dm
-
-
-class SpatremGraph(dm.BaseGraph):
-    def __init__(self, label: Optional[str] = None) -> None:
-        super().__init__(label)
 
 
 class Journal(dm.SerialWork):
@@ -45,11 +40,14 @@ class Issue(dm.Work):
 
         self.pub_expr.aggregates(self.editor_expr)
 
-        self.graph += journal.graph
-        self.graph += journal.expression.graph
-        self.graph += self.pub_expr.graph
-        self.graph += self.editor_work.graph
-        self.graph += self.editor_expr.graph
+        for entity in [
+                journal,
+                self.pub_expr,
+                journal.expression,
+                self.editor_work,
+                self.editor_expr,
+        ]:
+            self.graph += entity.graph
 
     @property
     def publication_work(self) -> dm.Work:
@@ -106,5 +104,6 @@ class Author(dm.Person):
             nomen.is_appellation_of(self)
             self.graph += nomen.graph
 
-    def has_appellation(self, nomen: "Nomen") -> None:
+    def has_appellation(self, nomen: "Nomen") -> Graph:
         self.graph.add((self.id, self.lrm.R13_has_Appellation, nomen.id))
+        return self.graph

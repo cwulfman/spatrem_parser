@@ -194,6 +194,7 @@ class Nomen(LrmGraph):
             super().__init__(name)
 
         self.graph.add((self.id, RDF.type, self.lrm.F12_Nomen))
+        self.graph.add((self.id, RDFS.label, Literal(name)))
         self.graph.add((self.id, self.lrm.R33_has_string, Literal(name)))
 
     def is_appellation_of(self, person: Person) -> None:
@@ -204,6 +205,8 @@ class ExpressionCreation(LrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
         self.graph.add((self.id, RDF.type, self.lrm.F28_Expression_Creation))
+        if label:
+            self.graph.add((self.id, RDFS.label, Literal(label)))
 
     def created(self, expr: Expression) -> None:
         self.graph.add((self.id, self.lrm.R17_created, expr.id))
@@ -219,6 +222,8 @@ class Language(CrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
         self.graph.add((self.id, RDF.type, self.crm.E56_Language))
+        if label:
+            self.graph.add((self.id, RDFS.label, Literal(label)))
 
 
 class Manifestion(LrmGraph):
@@ -230,6 +235,7 @@ class Manifestion(LrmGraph):
         if time_span:
             m_creation: "ManifestationCreation" = ManifestationCreation(time_span)
             self.was_created_by(m_creation)
+            self.graph += m_creation.graph
 
     def was_created_by(self, mc: "ManifestationCreation") -> None:
         self.graph.add((self.id, self.lrm.R24i_was_created_by, mc.id))
