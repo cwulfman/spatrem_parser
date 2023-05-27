@@ -41,11 +41,11 @@ class Issue(dm.Work):
         self.pub_expr.aggregates(self.editor_expr)
 
         for entity in [
-                journal,
-                self.pub_expr,
-                journal.expression,
-                self.editor_work,
-                self.editor_expr,
+            journal,
+            self.pub_expr,
+            journal.expression,
+            self.editor_work,
+            self.editor_expr,
         ]:
             self.graph += entity.graph
 
@@ -54,7 +54,7 @@ class Issue(dm.Work):
         return self
 
 
-class Constituent(dm.Work):
+class Constituent_old(dm.Work):
     def __init__(self, issue: Issue, item: dm.Work) -> None:
         self.label: str = f"{issue.label}_{item.label}"
         super().__init__(self.label)
@@ -97,9 +97,9 @@ class PublicationWork(dm.Work):
 
 class Author(dm.Person):
     def __init__(self, persName: Optional[str] = None) -> None:
-        super().__init__(persName)
+        super().__init__(f"the person {persName}")
         if persName:
-            nomen: dm.Nomen = dm.Nomen(persName)
+            nomen: dm.Nomen = dm.Nomen(f"nomen for {persName}")
             self.has_appellation(nomen)
             nomen.is_appellation_of(self)
             self.graph += nomen.graph

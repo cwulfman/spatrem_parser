@@ -1,38 +1,12 @@
-from os import times_result
+""" Classes that wrap LRMoo classes.
+
+"""
 from typing import Optional
-from pydantic import BaseModel
 from rdflib import Graph, Namespace
 from rdflib.namespace._RDF import RDF
 from rdflib.namespace._RDFS import RDFS
 from rdflib.term import URIRef, Literal
 from shortuuid import uuid
-
-
-class Translator(BaseModel):
-    Surname_Name: str
-    Pseudonyms: Optional[str]
-    Year_Birth: str
-    Year_Death: str
-    Nationality: str
-    Gender: str
-    Journals: Optional[str]
-    Notes: str
-
-
-class Translation(BaseModel):
-    Journal: str
-    Year: str
-    Issue_ID: str
-    Vol: str
-    No: str
-    Listed_Translator: str
-    Translator: str
-    Author: str
-    Title: str
-    Genre: str
-    SL: str
-    TL: str
-    Notes: str
 
 
 class BaseGraph:
@@ -126,14 +100,6 @@ class Work(LrmGraph):
         self.graph.add((self.id, self.lrm.R2i_is_derivative_of, work.id))
 
 
-class SerialWork(Work):
-    def __init__(self, label: Optional[str] = None) -> None:
-        super().__init__(label)
-        self.graph.remove((self.id, RDF.type, self.lrm.F1_Work))
-        self.graph.add((self.id, RDF.type, self.lrm.F18_Serial_Work))
-        self.expression: "Expression"
-
-
 class Expression(LrmGraph):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
@@ -155,11 +121,17 @@ class Expression(LrmGraph):
     def is_component_of(self, expr: "Expression") -> None:
         self.graph.add((self.id, self.lrm.R5i_is_component_of, expr.id))
 
-    def has_derivation(self, expr: "Expression") -> None:
-        self.graph.add((self.id, self.lrm.R24_has_derivation, expr.id))
+    def has_derivative(self, expr: "Expression") -> None:
+        self.graph.add((self.id, self.lrm.R76_has_derivative, expr.id))
 
-    def is_derivation_of(self, expr: "Expression") -> None:
-        self.graph.add((self.id, self.lrm.R24i_is_derivation_of, expr.id))
+    def is_derivative_of(self, expr: "Expression") -> None:
+        self.graph.add((self.id, self.lrm.R76i_is_derivative_of, expr.id))
+
+    # def has_derivation(self, expr: "Expression") -> None:
+    #     self.graph.add((self.id, self.lrm.R24_has_derivation, expr.id))
+
+    # def is_derivation_of(self, expr: "Expression") -> None:
+    #     self.graph.add((self.id, self.lrm.R24i_is_derivation_of, expr.id))
 
     def aggregates(self, expr: "Expression") -> None:
         self.graph.add((self.id, self.lrm.R25_aggregates, expr.id))
@@ -169,6 +141,9 @@ class Expression(LrmGraph):
 
     def was_created_by(self, expression_creation: "ExpressionCreation") -> None:
         self.graph.add((self.id, self.lrm.R17i_was_created_by, expression_creation.id))
+
+    def was_used_for(self, expression_creation: "ExpressionCreation") -> None:
+        self.graph.add((self.id, self.lrm.P16i_was_used_for, expression_creation.id))
 
     def has_language(self, language: "Language") -> None:
         self.graph.add((self.id, self.crm.P72i_has_language, language.id))
@@ -211,11 +186,17 @@ class ExpressionCreation(LrmGraph):
     def created(self, expr: Expression) -> None:
         self.graph.add((self.id, self.lrm.R17_created, expr.id))
 
+    def used(self, expr: Expression) -> None:
+        self.graph.add((self.id, self.lrm.P16_used, expr.id))
+
     def created_a_realisation_of(self, work: Work) -> None:
         self.graph.add((self.id, self.lrm.R19_created_a_realisation_of, work.id))
 
     def carried_out_by(self, agent: Person) -> None:
         self.graph.add((self.id, self.crm.P14i_carried_out_by, agent.id))
+
+    def has_type(self, type_str: str) -> None:
+        self.graph.add((self.id, self.lrm.P2_has_type, Literal(type_str)))
 
 
 class Language(CrmGraph):
@@ -271,3 +252,11 @@ class TimeSpan(LrmGraph):
         self.graph.add(
             (self.id, self.lrm.P82_at_some_time_within, Literal(time_span_str))
         )
+
+
+class SerialWork(Work):
+    def __init__(self, label: Optional[str] = None) -> None:
+        super().__init__(label)
+        self.graph.remove((self.id, RDF.type, self.lrm.F1_Work))
+        self.graph.add((self.id, RDF.type, self.lrm.F18_Serial_Work))
+        self.expression: Expression | None = None
