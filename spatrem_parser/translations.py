@@ -64,6 +64,35 @@ class TranslationExpression(dm.Expression):
 #         super().__init__(label)
 
 
+def create_publication_graph(row: Translation) -> Graph:
+    g = dm.BaseGraph().graph
+
+    issue_label = f"{row.Journal}_{row.Issue_ID}"
+
+    # the translation expression
+    tr_expr = dm.Expression(f"tr_expr of {row.Title}")
+
+    # the editorial expression
+    issue_ed_expr = dm.Expression(f"{issue_label}_ed_expr")
+
+    # the publication expression
+    issue_pub_expr = dm.Expression(f"{issue_label}_pub_expr")
+
+    issue_ed_expr.incorporates(tr_expr)
+    tr_expr.is_incorporated_in(issue_ed_expr)
+
+    issue_pub_expr.incorporates(issue_ed_expr)
+    issue_ed_expr.is_incorporated_in(issue_pub_expr)
+
+    for entity in [
+        tr_expr,
+        issue_ed_expr,
+        issue_pub_expr,
+    ]:
+        g += entity.graph
+    return g
+
+
 def create_translation_graph(row: Translation) -> Graph:
     g = dm.BaseGraph().graph
 
@@ -119,33 +148,72 @@ def create_translation_graph(row: Translation) -> Graph:
     return g
 
 
-def create_authored_work(
-    title: str,
-    author: Optional[Author] = None,
-    language: Optional[dm.Language] = None,
-) -> dm.Work:
-    work: dm.Work = dm.Work(title)
-    expr: dm.Expression = dm.Expression(f"{title}_expr")
-    expr.realises(work)
-    work.is_realised_by(expr)
-    if author:
-        expr_creation: dm.ExpressionCreation = dm.ExpressionCreation(
-            f"creation of {title}"
-        )
-        author.performed(expr_creation)
-        work.was_realised_through(expr_creation)
-        expr.was_created_by(expr_creation)
-    if language:
-        expr.has_language(language)
+def create_magazine_graph(row: Translation) -> Graph:
+    g = dm.BaseGraph().graph
 
-    work.graph += expr.graph
-    if author:
-        work.graph += author.graph
-        work.graph += expr_creation.graph
-    if language:
-        work.graph += language.graph
+    issue_label = f"{row.Journal}_{row.Issue_ID}"
 
-    return work
+    journal = dm.SerialWork(row.Journal)
+    issue_work = dm.Work(issue_label)
+    journal.has_member(issue_work)
+    issue_work.is_member_of(journal)
+
+    issue_pub_expr = dm.Expression(f"{issue_label}_pub_expr")
+    issue_work.is_realised_by(issue_pub_expr)
+    issue_pub_expr.realises(issue_work)
+
+    # the editorial expression
+    issue_ed_expr = dm.Expression(f"{issue_label}_ed_expr")
+
+    # the editorial expresion is incorporated by the publication expression
+    issue_pub_expr.incorporates(issue_ed_expr)
+    issue_ed_expr.is_incorporated_in(issue_pub_expr)
+
+    # representing the activity of publication
+
+    issue_manifestation = dm.Manifestion(f"{issue_label}_issue", dm.TimeSpan(row.Year))
+
+    issue_manifestation.embodies(issue_pub_expr)
+    issue_pub_expr.is_embodied_in(issue_manifestation)
+
+    for entity in [
+        journal,
+        issue_work,
+        issue_pub_expr,
+        issue_ed_expr,
+        issue_manifestation,
+    ]:
+        g += entity.graph
+    return g
+
+
+# def create_authored_work(
+#     title: str,
+#     author: Optional[Author] = None,
+#     language: Optional[dm.Language] = None,
+# ) -> dm.Work:
+#     work: dm.Work = dm.Work(title)
+#     expr: dm.Expression = dm.Expression(f"{title}_expr")
+#     expr.realises(work)
+#     work.is_realised_by(expr)
+#     if author:
+#         expr_creation: dm.ExpressionCreation = dm.ExpressionCreation(
+#             f"creation of {title}"
+#         )
+#         author.performed(expr_creation)
+#         work.was_realised_through(expr_creation)
+#         expr.was_created_by(expr_creation)
+#     if language:
+#         expr.has_language(language)
+
+#     work.graph += expr.graph
+#     if author:
+#         work.graph += author.graph
+#         work.graph += expr_creation.graph
+#     if language:
+#         work.graph += language.graph
+
+#     return work
 
 
 # def create_translation_old(data: dm.Translation) -> Graph:

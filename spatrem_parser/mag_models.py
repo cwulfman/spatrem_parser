@@ -97,7 +97,7 @@ class PublicationWork(dm.Work):
 
 class Author(dm.Person):
     def __init__(self, persName: Optional[str] = None) -> None:
-        super().__init__(f"the person {persName}")
+        super().__init__(persName)
         if persName:
             nomen: dm.Nomen = dm.Nomen(f"nomen for {persName}")
             self.has_appellation(nomen)
