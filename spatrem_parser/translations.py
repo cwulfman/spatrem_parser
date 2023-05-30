@@ -59,11 +59,6 @@ class TranslationExpression(dm.Expression):
         super().__init__(label)
 
 
-# class Translation(dm.Work):
-#     def __init__(self, label: Optional[str] = None) -> None:
-#         super().__init__(label)
-
-
 def create_publication_graph(row: Translation) -> Graph:
     g = dm.BaseGraph().graph
 
@@ -171,7 +166,13 @@ def create_magazine_graph(row: Translation) -> Graph:
 
     # representing the activity of publication
 
-    issue_manifestation = dm.Manifestion(f"{issue_label}_issue", dm.TimeSpan(row.Year))
+    # break this out into the creation and the entity to avoid overlap and duplication
+    # issue_manifestation = dm.Manifestion(f"{issue_label}_issue", dm.TimeSpan(row.Year))
+    issue_manifestation = dm.Manifestion(f"manifestation of {issue_label}")
+    mf_creation = dm.ManifestationCreation(f"creation of {issue_label}")
+    mf_creation.has_time_span(dm.TimeSpan(row.Year))
+    issue_manifestation.was_created_by(mf_creation)
+    mf_creation.created(issue_manifestation)
 
     issue_manifestation.embodies(issue_pub_expr)
     issue_pub_expr.is_embodied_in(issue_manifestation)
@@ -182,81 +183,7 @@ def create_magazine_graph(row: Translation) -> Graph:
         issue_pub_expr,
         issue_ed_expr,
         issue_manifestation,
+        mf_creation,
     ]:
         g += entity.graph
     return g
-
-
-# def create_authored_work(
-#     title: str,
-#     author: Optional[Author] = None,
-#     language: Optional[dm.Language] = None,
-# ) -> dm.Work:
-#     work: dm.Work = dm.Work(title)
-#     expr: dm.Expression = dm.Expression(f"{title}_expr")
-#     expr.realises(work)
-#     work.is_realised_by(expr)
-#     if author:
-#         expr_creation: dm.ExpressionCreation = dm.ExpressionCreation(
-#             f"creation of {title}"
-#         )
-#         author.performed(expr_creation)
-#         work.was_realised_through(expr_creation)
-#         expr.was_created_by(expr_creation)
-#     if language:
-#         expr.has_language(language)
-
-#     work.graph += expr.graph
-#     if author:
-#         work.graph += author.graph
-#         work.graph += expr_creation.graph
-#     if language:
-#         work.graph += language.graph
-
-#     return work
-
-
-# def create_translation_old(data: dm.Translation) -> Graph:
-#     g = dm.BaseGraph().graph
-#     journal: Journal = Journal(data.Journal)
-#     issue: Issue = Issue(journal, data.Issue_ID)
-#     author: Author = Author(data.Author)
-#     translator: Author = Author(data.Translator)
-#     SL = dm.Language(data.SL)
-#     TL = dm.Language(data.TL)
-#     date = dm.TimeSpan(data.Year)
-
-#     original_work: dm.Work = create_authored_work(f"{data.Title}_original", author, SL)
-#     translation: dm.Work = create_authored_work(
-#         f"{data.Title}_translation", translator, TL
-#     )
-#     translation.is_derivative_of(original_work)
-
-#     constituent: Constituent = Constituent(issue, translation)
-
-#     manifestation: dm.Manifestion = dm.Manifestion(
-#         label=f"{journal.label}_{issue.label}_manifestation", time_span=date
-#     )
-#     if issue.expression:
-#         manifestation.embodies(issue.expression)
-#         issue.expression.is_embodied_in(manifestation)
-
-#     for entity in [
-#         journal,
-#         issue,
-#         author,
-#         translator,
-#         SL,
-#         TL,
-#         date,
-#         original_work,
-#         translation,
-#         constituent,
-#         manifestation,
-#     ]:
-#         g += entity.graph
-
-#     if issue.expression:
-#         g += issue.expression.graph
-
-#     return g

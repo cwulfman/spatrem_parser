@@ -5,6 +5,7 @@ from typing import Optional
 from rdflib import Graph, Namespace
 from rdflib.namespace._RDF import RDF
 from rdflib.namespace._RDFS import RDFS
+from rdflib.namespace._XSD import XSD
 from rdflib.term import URIRef, Literal
 from shortuuid import uuid
 
@@ -127,12 +128,6 @@ class Expression(LrmGraph):
     def is_derivative_of(self, expr: "Expression") -> None:
         self.graph.add((self.id, self.lrm.R76i_is_derivative_of, expr.id))
 
-    # def has_derivation(self, expr: "Expression") -> None:
-    #     self.graph.add((self.id, self.lrm.R24_has_derivation, expr.id))
-
-    # def is_derivation_of(self, expr: "Expression") -> None:
-    #     self.graph.add((self.id, self.lrm.R24i_is_derivation_of, expr.id))
-
     def aggregates(self, expr: "Expression") -> None:
         self.graph.add((self.id, self.lrm.R25_aggregates, expr.id))
 
@@ -208,15 +203,9 @@ class Language(CrmGraph):
 
 
 class Manifestion(LrmGraph):
-    def __init__(
-        self, label: Optional[str] = None, time_span: Optional["TimeSpan"] = None
-    ) -> None:
+    def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
         self.graph.add((self.id, RDF.type, self.lrm.F3_Manifestation))
-        if time_span:
-            m_creation: "ManifestationCreation" = ManifestationCreation(time_span)
-            self.was_created_by(m_creation)
-            self.graph += m_creation.graph
 
     def was_created_by(self, mc: "ManifestationCreation") -> None:
         self.graph.add((self.id, self.lrm.R24i_was_created_by, mc.id))
@@ -225,15 +214,30 @@ class Manifestion(LrmGraph):
         self.graph.add((self.id, self.lrm.R4_embodies, expr.id))
 
 
+# class Manifestion(LrmGraph):
+#     def __init__(
+#         self, label: Optional[str] = None, time_span: Optional["TimeSpan"] = None
+#     ) -> None:
+#         super().__init__(label)
+#         self.graph.add((self.id, RDF.type, self.lrm.F3_Manifestation))
+#         if time_span:
+#             m_creation: "ManifestationCreation" = ManifestationCreation(time_span)
+#             self.was_created_by(m_creation)
+#             self.graph += m_creation.graph
+
+#     def was_created_by(self, mc: "ManifestationCreation") -> None:
+#         self.graph.add((self.id, self.lrm.R24i_was_created_by, mc.id))
+
+#     def embodies(self, expr: Expression) -> None:
+#         self.graph.add((self.id, self.lrm.R4_embodies, expr.id))
+
+
 class ManifestationCreation(LrmGraph):
-    def __init__(self, time_span: Optional["TimeSpan"] = None) -> None:
-        label = "manifest_creation"
-        if time_span:
-            label = f"{label}_{time_span.label}"
+    def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
         self.graph.add((self.id, RDF.type, self.lrm.F30_Manifestation_Creation))
-        if time_span:
-            self.has_time_span(time_span)
+        if label:
+            self.graph.add((self.id, RDFS.label, Literal(label)))
 
     def embodies(self, expr: Expression) -> None:
         self.graph.add((self.id, self.lrm.R4_embodies, expr.id))
@@ -245,12 +249,35 @@ class ManifestationCreation(LrmGraph):
         self.graph.add((self.id, self.crm.P4_has_time_span, time_span.id))
 
 
+# class ManifestationCreation(LrmGraph):
+#     def __init__(self, time_span: Optional["TimeSpan"] = None) -> None:
+#         # if time_span:
+#         #     label = f"{label}_{time_span.label}"
+#         super().__init__()
+#         self.graph.add((self.id, RDF.type, self.lrm.F30_Manifestation_Creation))
+#         if time_span:
+#             self.has_time_span(time_span)
+
+#     def embodies(self, expr: Expression) -> None:
+#         self.graph.add((self.id, self.lrm.R4_embodies, expr.id))
+
+#     def created(self, manifestation: Manifestion) -> None:
+#         self.graph.add((self.id, self.lrm.R24_created, manifestation.id))
+
+#     def has_time_span(self, time_span: "TimeSpan") -> None:
+#         self.graph.add((self.id, self.crm.P4_has_time_span, time_span.id))
+
+
 class TimeSpan(LrmGraph):
     def __init__(self, time_span_str: str) -> None:
         super().__init__(time_span_str)
         self.graph.add((self.id, RDF.type, self.lrm.E52_Time_Span))
         self.graph.add(
-            (self.id, self.lrm.P82_at_some_time_within, Literal(time_span_str))
+            (
+                self.id,
+                self.lrm.P82_at_some_time_within,
+                Literal(time_span_str, datatype=XSD.date),
+            )
         )
 
 
