@@ -10,6 +10,10 @@ from rdflib.term import URIRef, Literal
 from shortuuid import uuid
 
 
+def duration_from_year(year: str) -> XSD.duration:
+    return f"P{year}Y"
+
+
 class BaseGraph:
     lrm: Namespace = Namespace("http://iflastandards.info/ns/lrm/lrmer/")
     crm: Namespace = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
@@ -271,12 +275,13 @@ class ManifestationCreation(LrmGraph):
 class TimeSpan(LrmGraph):
     def __init__(self, time_span_str: str) -> None:
         super().__init__(time_span_str)
+        duration: XSD.duration = duration_from_year(time_span_str)
         self.graph.add((self.id, RDF.type, self.lrm.E52_Time_Span))
         self.graph.add(
             (
                 self.id,
                 self.lrm.P82_at_some_time_within,
-                Literal(time_span_str, datatype=XSD.date),
+                Literal(duration, datatype=XSD.duration),
             )
         )
 

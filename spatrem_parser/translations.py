@@ -170,7 +170,8 @@ def create_magazine_graph(row: Translation) -> Graph:
     # issue_manifestation = dm.Manifestion(f"{issue_label}_issue", dm.TimeSpan(row.Year))
     issue_manifestation = dm.Manifestion(f"manifestation of {issue_label}")
     mf_creation = dm.ManifestationCreation(f"creation of {issue_label}")
-    mf_creation.has_time_span(dm.TimeSpan(row.Year))
+    time_span = dm.TimeSpan(row.Year)
+    mf_creation.has_time_span(time_span)
     issue_manifestation.was_created_by(mf_creation)
     mf_creation.created(issue_manifestation)
 
@@ -184,6 +185,7 @@ def create_magazine_graph(row: Translation) -> Graph:
         issue_ed_expr,
         issue_manifestation,
         mf_creation,
+        time_span,
     ]:
         g += entity.graph
     return g

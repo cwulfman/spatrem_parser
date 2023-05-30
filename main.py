@@ -6,7 +6,12 @@ from rdflib import Graph
 import typer
 import spatrem_parser.datamodels as dm
 from spatrem_parser.spatrem import spatrem_graph
-from spatrem_parser.translations import Translation, create_translation
+from spatrem_parser.translations import (
+    Translation,
+    create_magazine_graph,
+    create_publication_graph,
+    create_translation_graph,
+)
 
 
 app = typer.Typer(help="Spatrem CSV translator")
@@ -14,18 +19,21 @@ app = typer.Typer(help="Spatrem CSV translator")
 
 @app.command()
 def generate_graph(infile: Path, outfile: Optional[Path] = None) -> None:
-    translations: Graph = spatrem_graph()
+    graphs: Graph = spatrem_graph()
     with open(infile, mode="r", encoding="utf-8-sig") as csvfile:
         reader: DictReader = DictReader(csvfile, delimiter=";")
         for row in reader:
-            tr = create_translation(dm.Translation(**row))
-            translations += tr
+            record = Translation(**row)
+            graphs += create_magazine_graph(record)
+            if record.Translator != "NONE":
+                graphs += create_translation_graph(record)
+                graphs += create_publication_graph(record)
 
     if outfile is None:
-        stdout.write(translations.serialize())
+        stdout.write(graphs.serialize())
     else:
         with open(outfile, mode="w", encoding="utf-8-sig") as out:
-            out.write(translations.serialize())
+            out.write(graphs.serialize())
 
 
 if __name__ == "__main__":
