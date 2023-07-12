@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Optional, List
 from rdflib import Graph
 from rdflib.term import URIRef, Literal
-import spatrem_parser.datamodels as dm
-from spatrem_parser.mag_models import Journal, Issue, Author
+import lrm_models as lrm
+from mag_models import Journal, Issue, Author
 
 # Translator and Translation are Pydantic classes that validate rows
 # from the spreadsheets.
@@ -49,29 +49,28 @@ class Translation(BaseModel):
     Notes: str
 
 
-class TranslationWork(dm.Work):
+class TranslationWork(lrm.Work):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
 
 
-class TranslationExpression(dm.Expression):
+class TranslationExpression(lrm.Expression):
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
 
 
 def create_publication_graph(row: Translation) -> Graph:
-    g = dm.BaseGraph().graph
-
+    g = lrm.BaseGraph().graph
     issue_label = f"{row.Journal}_{row.Issue_ID}"
 
     # the translation expression
-    tr_expr = dm.Expression(f"tr_expr of {row.Title}")
+    tr_expr = lrm.Expression(f"tr_expr of {row.Title}")
 
     # the editorial expression
-    issue_ed_expr = dm.Expression(f"{issue_label}_ed_expr")
+    issue_ed_expr = lrm.Expression(f"{issue_label}_ed_expr")
 
     # the publication expression
-    issue_pub_expr = dm.Expression(f"{issue_label}_pub_expr")
+    issue_pub_expr = lrm.Expression(f"{issue_label}_pub_expr")
 
     issue_ed_expr.incorporates(tr_expr)
     tr_expr.is_incorporated_in(issue_ed_expr)
@@ -89,16 +88,16 @@ def create_publication_graph(row: Translation) -> Graph:
 
 
 def create_translation_graph(row: Translation) -> Graph:
-    g = dm.BaseGraph().graph
+    g = lrm.BaseGraph().graph
 
-    tr_expr = dm.Expression(f"tr_expr of {row.Title}")
-    tr_creation = dm.ExpressionCreation(f"creation of tr of {row.Title}")
+    tr_expr = lrm.Expression(f"tr_expr of {row.Title}")
+    tr_creation = lrm.ExpressionCreation(f"creation of tr of {row.Title}")
     tr_creation.has_type("translation")
     tr_creation.created(tr_expr)
     tr_expr.was_created_by(tr_creation)
 
-    src_expr = dm.Expression(f"expression of unnamed source of {row.Title}")
-    src_creation = dm.ExpressionCreation(f"creation of unnamed source of {row.Title}")
+    src_expr = lrm.Expression(f"expression of unnamed source of {row.Title}")
+    src_creation = lrm.ExpressionCreation(f"creation of unnamed source of {row.Title}")
     src_creation.created(src_expr)
     src_expr.was_created_by(src_creation)
 
@@ -121,12 +120,12 @@ def create_translation_graph(row: Translation) -> Graph:
 
     # languages
     if row.SL:
-        source_language = dm.Language(row.SL)
+        source_language = lrm.Language(row.SL)
         g += source_language.graph
         src_expr.has_language(source_language)
 
     if row.TL:
-        translation_language = dm.Language(row.TL)
+        translation_language = lrm.Language(row.TL)
         g += translation_language.graph
         tr_expr.has_language(translation_language)
 
@@ -144,21 +143,21 @@ def create_translation_graph(row: Translation) -> Graph:
 
 
 def create_magazine_graph(row: Translation) -> Graph:
-    g = dm.BaseGraph().graph
+    g = lrm.BaseGraph().graph
 
     issue_label = f"{row.Journal}_{row.Issue_ID}"
 
-    journal = dm.SerialWork(row.Journal)
-    issue_work = dm.Work(issue_label)
+    journal = lrm.SerialWork(row.Journal)
+    issue_work = lrm.Work(issue_label)
     journal.has_member(issue_work)
     issue_work.is_member_of(journal)
 
-    issue_pub_expr = dm.Expression(f"{issue_label}_pub_expr")
+    issue_pub_expr = lrm.Expression(f"{issue_label}_pub_expr")
     issue_work.is_realised_by(issue_pub_expr)
     issue_pub_expr.realises(issue_work)
 
     # the editorial expression
-    issue_ed_expr = dm.Expression(f"{issue_label}_ed_expr")
+    issue_ed_expr = lrm.Expression(f"{issue_label}_ed_expr")
 
     # the editorial expresion is incorporated by the publication expression
     issue_pub_expr.incorporates(issue_ed_expr)
@@ -167,10 +166,10 @@ def create_magazine_graph(row: Translation) -> Graph:
     # representing the activity of publication
 
     # break this out into the creation and the entity to avoid overlap and duplication
-    # issue_manifestation = dm.Manifestion(f"{issue_label}_issue", dm.TimeSpan(row.Year))
-    issue_manifestation = dm.Manifestion(f"manifestation of {issue_label}")
-    mf_creation = dm.ManifestationCreation(f"creation of {issue_label}")
-    time_span = dm.TimeSpan(row.Year)
+    # issue_manifestation = lrm.Manifestion(f"{issue_label}_issue", lrm.TimeSpan(row.Year))
+    issue_manifestation = lrm.Manifestion(f"manifestation of {issue_label}")
+    mf_creation = lrm.ManifestationCreation(f"creation of {issue_label}")
+    time_span = lrm.TimeSpan(row.Year)
     mf_creation.has_time_span(time_span)
     issue_manifestation.was_created_by(mf_creation)
     mf_creation.created(issue_manifestation)

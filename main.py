@@ -4,9 +4,8 @@ from pathlib import Path
 from csv import DictReader
 from rdflib import Graph
 import typer
-import spatrem_parser.datamodels as dm
-from spatrem_parser.spatrem import spatrem_graph
-from spatrem_parser.translations import (
+from lrm_models import BaseGraph
+from translation_models import (
     Translation,
     create_magazine_graph,
     create_publication_graph,
@@ -19,7 +18,7 @@ app = typer.Typer(help="Spatrem CSV translator")
 
 @app.command()
 def generate_graph(infile: Path, outfile: Optional[Path] = None) -> None:
-    graphs: Graph = spatrem_graph()
+    graphs: Graph = BaseGraph().graph
     with open(infile, mode="r", encoding="utf-8-sig") as csvfile:
         reader: DictReader = DictReader(csvfile, delimiter=";")
         for row in reader:
