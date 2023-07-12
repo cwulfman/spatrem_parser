@@ -4,11 +4,16 @@ from rdflib.namespace._RDF import RDF
 from rdflib.namespace._RDFS import RDFS
 from rdflib.namespace._XSD import XSD
 from rdflib.term import URIRef, Literal
-from shortuuid import uuid
+import re
+import uuid
 
 
-def duration_from_year(year: str) -> XSD.duration:
-    return f"P{year}Y"
+# def duration_from_year(year: str) -> XSD.duration:
+#     return f"P{year}Y"
+
+
+def gen_id(string: str) -> str:
+    return str(uuid.uuid3(uuid.NAMESPACE_X500, re.sub(r"\W", "", string)))
 
 
 class BaseGraph:
@@ -33,28 +38,23 @@ class BaseGraph:
         "spatrem": "http://spacesoftranslation.org/ns/spatrem/",
     }
 
-    # lrm: Namespace = Namespace("http://iflastandards.info/ns/lrm/lrmer/")
-    # crm: Namespace = Namespace("http://www.cidoc-crm.org/cidoc-crm/")
-    # spatrem: Namespace = Namespace("http://spacesoftranslation.org/ns/spatrem/")
-    # journal: Namespace = Namespace("http://spacesoftranslation.org/ns/journals/")
-    # issue: Namespace = Namespace("http://spacesoftranslation.org/ns/issues/")
-    # work: Namespace = Namespace("http://spacesoftranslation.org/ns/works/")
-    # translation: Namespace = Namespace(
-    #     "http://spacesoftranslation.org/ns/translations/"
-    # )
-    # person: Namespace = Namespace("http://spacesoftranslation.org/ns/spatrem/persons/")
-    # nomen: Namespace = Namespace("http://spacesoftranslation.org/ns/spatrem/nomena/")
-
     ns = "spatrem"
 
     def __init__(self, label: Optional[str] = None) -> None:
         self.graph = Graph()
         for k, v in self.spatrem_namespaces.items():
             self.graph.bind(k, v)
-        self.label:str = ""
+
+        if label is None:
+            self.key = str(uuid.uuid4())
+        else:
+            self.label = label.strip()
+            self.key = gen_id(self.label)
+
+        self.id: URIRef = self.uri_ref(self.ns, self.key)
+
         if label:
-            self.label:str  = label.strip()
-        self.graph.add((self.id, RDFS.label, Literal(self.label)))
+            self.graph.add((self.id, RDFS.label, Literal(self.label)))
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}: {self.label}>"
@@ -62,20 +62,10 @@ class BaseGraph:
     def __str__(self) -> str:
         return self.graph.serialize()
 
-    @property
-    def id(self) -> URIRef:
-        return self.uri_ref(self.ns, self.clean(self.label))
+    def clean(self, dirty_string: str) -> str:
+        return re.sub(r"\W", "", dirty_string)
 
-    def clean(self, id_string: str) -> str:
-        id = id_string.strip()
-        id = id.replace(" ", "_")
-        id = id.replace(",", "")
-        id = id.replace(":", "")
-        id = id.replace(";", "")
-        id = id.replace(".", "")
-        return id
-
-    def uri_ref(self, ns_name, token) -> URIRef:
+    def uri_ref(self, ns_name: str, token: str) -> URIRef:
         try:
             return Namespace(dict(self.graph.namespaces())[ns_name])[token]
         except KeyError:
