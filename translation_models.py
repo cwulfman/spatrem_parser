@@ -106,25 +106,32 @@ def create_translation_graph(row: Translation) -> Graph:
 
     # authors & translators
     if row.Translator and row.Translator != "NONE":
-        translator = Author(row.Translator)
-        translator.performed(tr_creation)
-        g += translator.graph
+        translators = row.Translator.split(";")
+        for name in translators:
+            translator = Author(name)
+            translator.performed(tr_creation)
+            g += translator.graph
 
     if row.Author and row.Author != "NONE":
-        author = Author(row.Author)
-        author.performed(src_creation)
-        g += author.graph
+        authors = row.Author.split(";")
+        for name in authors:
+            author = Author(name)
+            author.performed(src_creation)
+            g += author.graph
 
     # languages
     if row.SL:
-        source_language = lrm.Language(row.SL)
-        g += source_language.graph
-        src_expr.has_language(source_language)
+        languages = row.SL.split(";")
+        for language in languages:
+            source_language = lrm.Language(language)
+            g += source_language.graph
+            src_expr.has_language(source_language)
 
     if row.TL:
-        translation_language = lrm.Language(row.TL)
-        g += translation_language.graph
-        tr_expr.has_language(translation_language)
+        for language in row.TL.split(";"):
+            translation_language = lrm.Language(language)
+            g += translation_language.graph
+            tr_expr.has_language(translation_language)
 
     for entity in [
         tr_expr,
