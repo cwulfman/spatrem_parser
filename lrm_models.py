@@ -200,7 +200,7 @@ class Person(SpatremGraph):
 
     def performed(self, expression_creation: "ExpressionCreation") -> None:
         self.graph.add(
-            (self.id, self.uri_ref("crm", "P14_performed"), expression_creation.id)
+            (self.id, self.uri_ref("crm", "P14i_performed"), expression_creation.id)
         )
 
     def has_birthdate(self, date: str) -> None:
@@ -255,7 +255,8 @@ class ExpressionCreation(LrmGraph):
         )
 
     def carried_out_by(self, agent: Person) -> None:
-        self.graph.add((self.id, self.uri_ref("crm", "P14i_carried_out_by"), agent.id))
+        """This property describes the active participation of an instance of E39 Actor in an instance of E7 Activity."""
+        self.graph.add((self.id, self.uri_ref("crm", "P14_carried_out_by"), agent.id))
 
     def has_type(self, type_str: str) -> None:
         self.graph.add((self.id, self.uri_ref("lrm", "P2_has_type"), Literal(type_str)))
