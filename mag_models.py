@@ -26,8 +26,8 @@ class Issue(lrm.Work):
         self.pub_expr.realises(self)
 
         if journal:
-            self.is_member_of(journal)
-            journal.has_member(self)
+            self.is_part_of(journal)
+            journal.has_part(self)
             self.graph += journal.graph
             self.pub_expr.is_component_of(journal.expression)
             journal.expression.has_component(self.pub_expr)
@@ -106,6 +106,7 @@ class AuthorOld(lrm.Person):
     def has_appellation(self, nomen: lrm.Nomen) -> Graph:
         self.graph.add((self.id, self.uri_ref("lrm", "R13_has_appellation"), nomen.id))
         return self.graph
+
 
 class Author(lrm.Person):
     def __init__(self, persName: str) -> None:

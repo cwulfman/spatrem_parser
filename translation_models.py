@@ -153,8 +153,8 @@ def create_magazine_graph(row: Translation) -> Graph:
 
     journal = lrm.SerialWork(row.Journal)
     issue_work = lrm.Work(issue_label)
-    journal.has_member(issue_work)
-    issue_work.is_member_of(journal)
+    journal.has_part(issue_work)
+    issue_work.is_part_of(journal)
 
     issue_pub_expr = lrm.Expression(f"{issue_label}_pub_expr")
     issue_work.is_realised_by(issue_pub_expr)

@@ -108,11 +108,8 @@ class Work(LrmGraph):
     def is_part_of(self, work: "Work") -> None:
         self.graph.add((self.id, self.uri_ref("lrm", "R67i_is_part_of"), work.id))
 
-    def has_member(self, work: "Work") -> None:
-        self.graph.add((self.id, self.uri_ref("lrm", "R10_has_member"), work.id))
-
-    def is_member_of(self, work: "Work") -> None:
-        self.graph.add((self.id, self.uri_ref("lrm", "R10i_is_part_of"), work.id))
+    def has_part(self, work: "Work") -> None:
+        self.graph.add((self.id, self.uri_ref("lrm", "R67_has_part"), work.id))
 
     def was_realised_through(self, expression_creation: "ExpressionCreation") -> None:
         self.graph.add(
@@ -183,7 +180,7 @@ class Expression(LrmGraph):
         )
 
     def has_language(self, language: "Language") -> None:
-        self.graph.add((self.id, self.uri_ref("crm", "P72i_has_language"), language.id))
+        self.graph.add((self.id, self.uri_ref("crm", "P72_has_language"), language.id))
 
     def is_embodied_in(self, manifestation: "Manifestion") -> None:
         self.graph.add(
