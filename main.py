@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 from sys import stdout
 from pathlib import Path
 from csv import DictReader

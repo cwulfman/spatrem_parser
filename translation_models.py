@@ -5,14 +5,11 @@ subclasses, that represent(s) the data from Spatrem's spreadsheets
 as a graph.
 """
 
-from csv import DictReader
 from pydantic import BaseModel
-from pathlib import Path
-from typing import Optional, List
+from typing import Optional
 from rdflib import Graph
-from rdflib.term import URIRef, Literal
 import lrm_models as lrm
-from mag_models import Journal, Issue, Author
+from mag_models import Author
 
 # Translator and Translation are Pydantic classes that validate rows
 # from the spreadsheets.
@@ -188,3 +185,27 @@ def create_magazine_graph(row: Translation) -> Graph:
     ]:
         g += entity.graph
     return g
+
+
+def create_translator_graph(row: Translator) -> Graph:
+    """Create a graph from a row in a translators table.
+
+    This function assumes the functions above have already
+    been run on a translations table, and that the person
+    has already been established.
+    """
+
+    person = lrm.Person(row.Surname_Name)
+    if row.Year_Birth != "Missing":
+        person.has_birthdate(row.Year_Birth)
+
+    if row.Year_Death != "Missing":
+        person.has_deathdate(row.Year_Death)
+
+    if row.Gender != "Missing":
+        person.has_gender(row.Gender)
+
+    if row.Nationality != "Missing":
+        person.has_nationality(row.Nationality)
+
+    return person.graph

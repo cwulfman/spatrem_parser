@@ -28,6 +28,7 @@ class BaseGraph:
     spatrem_namespaces = {
         "lrm": "http://iflastandards.info/ns/lrm/lrmer/",
         "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+        "schema": "http://schema.org/",
         "nomen": "http://spacesoftranslation.org/ns/nomena/",
         "person": "http://spacesoftranslation.org/ns/people/",
         "journal": "http://spacesoftranslation.org/ns/journals/",
@@ -200,6 +201,20 @@ class Person(SpatremGraph):
     def performed(self, expression_creation: "ExpressionCreation") -> None:
         self.graph.add(
             (self.id, self.uri_ref("crm", "P14_performed"), expression_creation.id)
+        )
+
+    def has_birthdate(self, date: str) -> None:
+        self.graph.add((self.id, self.uri_ref("schema", "birthDate"), Literal(date)))
+
+    def has_deathdate(self, date: str) -> None:
+        self.graph.add((self.id, self.uri_ref("schema", "deathDate"), Literal(date)))
+
+    def has_gender(self, gender: str) -> None:
+        self.graph.add((self.id, self.uri_ref("schema", "gender"), Literal(gender)))
+
+    def has_nationality(self, nationality: str) -> None:
+        self.graph.add(
+            (self.id, self.uri_ref("schema", "nationality"), Literal(nationality))
         )
 
 

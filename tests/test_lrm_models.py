@@ -1,5 +1,3 @@
-from rdflib import Namespace
-from rdflib.term import URIRef
 from lrm_models import BaseGraph, LrmGraph
 
 

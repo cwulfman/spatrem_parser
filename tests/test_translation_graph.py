@@ -1,4 +1,3 @@
-import pytest
 from spatrem_parser.translations import (
     Translation,
     create_translation_graph,
