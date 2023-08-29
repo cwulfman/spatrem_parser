@@ -375,6 +375,10 @@ class SerialWork(Work):
 
     def __init__(self, label: Optional[str] = None) -> None:
         super().__init__(label)
+
+        self.id: URIRef = self.uri_ref("spatrem", label.strip())
+
         self.graph.remove((self.id, RDF.type, self.uri_ref("lrm", "F1_Work")))
         self.graph.add((self.id, RDF.type, self.uri_ref("lrm", "F18_Serial_Work")))
+        self.graph.add((self.id, RDFS.label, Literal(label.strip())))
         self.expression: Expression | None = None

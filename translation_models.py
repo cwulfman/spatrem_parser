@@ -106,14 +106,14 @@ def create_translation_graph(row: Translation) -> Graph:
 
     # authors & translators
     if row.Translator and row.Translator != "NONE":
-        translators = row.Translator.split(";")
+        translators = [n.strip() for n in row.Translator.split(";")]
         for name in translators:
             translator = Author(name)
             translator.performed(tr_creation)
             g += translator.graph
 
     if row.Author and row.Author != "NONE":
-        authors = row.Author.split(";")
+        authors = [n.strip() for n in row.Author.split(";")]
         for name in authors:
             author = Author(name)
             author.performed(src_creation)
@@ -121,14 +121,15 @@ def create_translation_graph(row: Translation) -> Graph:
 
     # languages
     if row.SL:
-        languages = row.SL.split(";")
+        languages = [l.strip() for l in row.SL.split(";")]
         for language in languages:
             source_language = lrm.Language(language)
             g += source_language.graph
             src_expr.has_language(source_language)
 
     if row.TL:
-        for language in row.TL.split(";"):
+        languages = [l.strip() for l in row.TL.split(";")]
+        for language in languages:
             translation_language = lrm.Language(language)
             g += translation_language.graph
             tr_expr.has_language(translation_language)
@@ -160,6 +161,14 @@ def create_magazine_graph(row: Translation) -> Graph:
     issue_work.is_realised_by(issue_pub_expr)
     issue_pub_expr.realises(issue_work)
 
+    tr_expr = lrm.Expression(f"tr_expr of {row.Title}")
+    constituent_work = lrm.Work(row.Title)
+    constituent_work.is_part_of(issue_work)
+    issue_work.has_part(constituent_work)
+
+    constituent_work.is_realised_by(tr_expr)
+    tr_expr.realises(constituent_work)
+
     # the editorial expression
     issue_ed_expr = lrm.Expression(f"{issue_label}_ed_expr")
 
@@ -185,6 +194,8 @@ def create_magazine_graph(row: Translation) -> Graph:
         journal,
         issue_work,
         issue_pub_expr,
+        tr_expr,
+        constituent_work,
         issue_ed_expr,
         issue_manifestation,
         mf_creation,
