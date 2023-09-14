@@ -164,6 +164,7 @@ def create_magazine_graph(row: Translation) -> Graph:
     tr_expr = lrm.Expression(f"tr_expr of {row.Title}")
     constituent_work = lrm.Work(row.Title)
     constituent_work.is_part_of(issue_work)
+    constituent_work.has_type(row.Genre)
     issue_work.has_part(constituent_work)
 
     constituent_work.is_realised_by(tr_expr)

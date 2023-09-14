@@ -126,6 +126,9 @@ class Work(LrmGraph):
     def is_derivative_of(self, work: "Work") -> None:
         self.graph.add((self.id, self.uri_ref("lrm", "R2i_is_derivative_of"), work.id))
 
+    def has_type(self, type_str: str) -> None:
+        self.graph.add((self.id, self.uri_ref("lrm", "P2_has_type"), Literal(type_str)))
+
 
 class Expression(LrmGraph):
     ns = "expression"
