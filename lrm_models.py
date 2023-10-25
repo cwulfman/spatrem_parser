@@ -6,6 +6,7 @@ from rdflib.namespace._XSD import XSD
 from rdflib.term import URIRef, Literal
 import re
 import uuid
+import shortuuid
 
 
 # def duration_from_year(year: str) -> XSD.duration:
@@ -14,6 +15,38 @@ import uuid
 
 def gen_id(string: str) -> str:
     return str(uuid.uuid3(uuid.NAMESPACE_X500, re.sub(r"\W", "", string)))
+
+
+class BaseGraph2:
+
+    spatrem_namespaces = {
+        "lrm": "http://iflastandards.info/ns/lrm/lrmer/",
+        "crm": "http://www.cidoc-crm.org/cidoc-crm/",
+        "schema": "http://schema.org/",
+        "dcterms": "http://purl.org/dc/terms/",
+        "nomen": "http://spacesoftranslation.org/ns/nomena/",
+        "person": "http://spacesoftranslation.org/ns/people/",
+        "journal": "http://spacesoftranslation.org/ns/journals/",
+        "issue": "http://spacesoftranslation.org/ns/issues/",
+        "work": "http://spacesoftranslation.org/ns/works/",
+        "expression": "http://spacesoftranslation.org/ns/expressions/",
+        "translation": "http://spacesoftranslation.org/ns/translations/",
+        "spatrem": "http://spacesoftranslation.org/ns/spatrem/",
+    }
+    ns = "spatrem"
+
+    def __init__(self) -> None:
+        self.graph = Graph()
+        for k, v in self.spatrem_namespaces.items():
+            self.graph.bind(k, v)
+        self.id = self.uri_ref(self.ns, shortuuid.uuid())
+        
+
+    def uri_ref(self, ns_name: str, token: str) -> URIRef:
+        try:
+            return Namespace(dict(self.graph.namespaces())[ns_name])[token]
+        except KeyError:
+            return URIRef(token)
 
 
 class BaseGraph:
@@ -94,16 +127,16 @@ class Work(LrmGraph):
     ns = "work"
 
     def __init__(self, label: Optional[str] = None) -> None:
-        super().__init__(label.strip())
+        if label:
+            super().__init__(label.strip())
+        else:
+            super().__init__()
         self.graph.add((self.id, RDF.type, self.uri_ref("lrm", "F1_Work")))
         self.expression: Optional["Expression"] = None
 
     def is_realised_by(self, expr: "Expression") -> None:
         self.expression = expr
         self.graph.add((self.id, self.uri_ref("lrm", "R3i_is_realised_by"), expr.id))
-
-    def has_part(self, work: "Work") -> None:
-        self.graph.add((self.id, self.uri_ref("lrm", "R67_has_part"), work.id))
 
     def is_part_of(self, work: "Work") -> None:
         self.graph.add((self.id, self.uri_ref("lrm", "R67i_is_part_of"), work.id))
@@ -134,7 +167,10 @@ class Expression(LrmGraph):
     ns = "expression"
 
     def __init__(self, label: Optional[str] = None) -> None:
-        super().__init__(label.strip())
+        if label:
+            super().__init__(label.strip())
+        else:
+            super().__init__()
         self.graph.add((self.id, RDF.type, self.uri_ref("lrm", "F2_Expression")))
 
     def realises(self, work: Work) -> None:
@@ -149,10 +185,12 @@ class Expression(LrmGraph):
         )
 
     def has_component(self, expr: "Expression") -> None:
-        self.graph.add((self.id, self.lrm.R5_has_component, expr.id))
+        # self.graph.add((self.id, self.lrm.R5_has_component, expr.id))
+        self.graph.add((self.id, self.uri_ref("lrm", "R5_has_component"), expr.id))
 
     def is_component_of(self, expr: "Expression") -> None:
-        self.graph.add((self.id, self.lrm.R5i_is_component_of, expr.id))
+        # self.graph.add((self.id, self.lrm.R5i_is_component_of, expr.id))
+        self.graph.add((self.id, self.uri_ref("lrm", "R5i_is_component_of"), expr.id))
 
     def has_derivative(self, expr: "Expression") -> None:
         self.graph.add((self.id, self.uri_ref("lrm", "R76_has_derivative"), expr.id))
@@ -194,8 +232,11 @@ class Expression(LrmGraph):
 class Person(SpatremGraph):
     ns = "person"
 
-    def __init__(self, persName: str) -> None:
-        super().__init__(persName.strip())
+    def __init__(self, persName: Optional[str] = None) -> None:
+        if persName:
+            super().__init__(persName.strip())
+        else:
+            super().__init__()
         self.graph.add((self.id, RDF.type, self.uri_ref("crm", "E21_Person")))
 
     def performed(self, expression_creation: "ExpressionCreation") -> None:
@@ -376,12 +417,18 @@ class SerialWork(Work):
 
     """
 
-    def __init__(self, label: Optional[str] = None) -> None:
+    def __init__(self, label_str: Optional[str] = None) -> None:
+
+        if label_str:
+            label = label_str.strip()
+        else:
+            label = None
+
         super().__init__(label)
 
-        self.id: URIRef = self.uri_ref("spatrem", label.strip())
+        # self.id: URIRef = self.uri_ref("spatrem", label)
 
         self.graph.remove((self.id, RDF.type, self.uri_ref("lrm", "F1_Work")))
         self.graph.add((self.id, RDF.type, self.uri_ref("lrm", "F18_Serial_Work")))
-        self.graph.add((self.id, RDFS.label, Literal(label.strip())))
+        self.graph.add((self.id, RDFS.label, Literal(label)))
         self.expression: Expression | None = None

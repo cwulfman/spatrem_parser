@@ -29,8 +29,9 @@ class Issue(lrm.Work):
             self.is_part_of(journal)
             journal.has_part(self)
             self.graph += journal.graph
-            self.pub_expr.is_component_of(journal.expression)
-            journal.expression.has_component(self.pub_expr)
+            if journal.expression:
+                self.pub_expr.is_component_of(journal.expression)
+                journal.expression.has_component(self.pub_expr)
 
         self.editor_work: lrm.Work = lrm.Work(f"{journal.label}_{issue_id}_edw")
         self.editor_expr: lrm.Expression = lrm.Expression(f"{self.label}_edexpr")
@@ -109,14 +110,29 @@ class AuthorOld(lrm.Person):
 
 
 class Author(lrm.Person):
-    def __init__(self, persName: str) -> None:
-        super().__init__(persName)
+    """ An Author is a Person.
 
-        nomen: lrm.Nomen = lrm.Nomen(persName)
-        self.has_appellation(nomen)
-        nomen.is_appellation_of(self)
-        self.graph += nomen.graph
 
-    def has_appellation(self, nomen: lrm.Nomen) -> Graph:
+    Creating an Author object is tricky, because the id
+    is derived from the persName, but the name "Anon." is
+    not the name of a Person, just a label.
+
+    """
+    def __init__(self, persName: Optional[str] = None) -> None:
+        if persName:
+            persName = persName.strip()
+            if persName != "Anon.":
+                super().__init__(persName)
+            else:
+                super().__init__()
+        else:
+            super().__init__()
+            
+        if persName:
+            nomen: lrm.Nomen = lrm.Nomen(persName)
+            self.has_appellation(nomen)
+            nomen.is_appellation_of(self)
+            self.graph += nomen.graph
+
+    def has_appellation(self, nomen: lrm.Nomen):
         self.graph.add((self.id, self.uri_ref("lrm", "R13_has_appellation"), nomen.id))
-        return self.graph
