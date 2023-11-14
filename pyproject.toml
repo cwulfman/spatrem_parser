@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "parser2"
+version = "0.1.0"
+description = ""
+authors = ["Cliff Wulfman <cwulfman@princeton.edu>"]
+readme = "README.md"
+packages = [{include = "spatrem"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+rdflib = "^7.0.0"
+pydantic = "^2.4.2"
+shortuuid = "^1.0.11"
+typer = {version = "^0.9.0", extras = ["all"]}
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.2"
+pytest-cov = "^4.1.0"
+pytest-html = "^4.0.2"
+tox = "^4.11.3"
+
+
+[tool.poetry.group.lint.dependencies]
+ruff = "^0.1.0"
+black = "^23.10.0"
+mypy = "^1.6.1"
+pyflakes = "^3.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
